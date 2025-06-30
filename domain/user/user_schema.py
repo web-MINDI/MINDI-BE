@@ -1,0 +1,27 @@
+from pydantic import BaseModel
+from typing import Optional
+
+class UserBase(BaseModel):
+    phone: str
+    name: str
+    gender: Optional[str] = None
+    birth_year: Optional[int] = None
+    birth_month: Optional[int] = None
+    birth_day: Optional[int] = None
+    education: Optional[str] = None
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    phone: Optional[str] = None
