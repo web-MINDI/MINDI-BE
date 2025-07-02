@@ -131,4 +131,4 @@ venv.bak/
 
 .idea/*
 
-.pem
+mindi-key.pem
