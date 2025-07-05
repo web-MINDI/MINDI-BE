@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from domain.user import user_router, user_model
 from domain.diagnosis import diagnosis_router
+from domain.care import care_router
 from database.session import engine
 
 user_model.Base.metadata.create_all(bind=engine)
@@ -26,6 +27,7 @@ app.add_middleware(
 # 사용자 관련 라우터를 앱에 포함시킵니다.
 app.include_router(user_router.router, prefix="/api")
 app.include_router(diagnosis_router.router, prefix="/api")
+app.include_router(care_router.router, prefix="/api")
 
 @app.get("/")
 async def root():
