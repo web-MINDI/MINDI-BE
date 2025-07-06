@@ -3,10 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from domain.user import user_router, user_model
 from domain.diagnosis import diagnosis_router
-from domain.care import care_router
+from domain.care import care_router, care_model
 from database.session import engine
 
 user_model.Base.metadata.create_all(bind=engine)
+care_model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

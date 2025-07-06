@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 from database.session import Base
 
 class User(Base):
@@ -13,3 +14,5 @@ class User(Base):
     birth_month = Column(Integer)
     birth_day = Column(Integer)
     education = Column(String(50))
+
+    care_logs = relationship("CareLog", back_populates="owner")
