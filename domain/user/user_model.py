@@ -15,4 +15,4 @@ class User(Base):
     birth_day = Column(Integer)
     education = Column(String(50))
 
-    care_logs = relationship("CareLog", back_populates="owner")
+    care_logs = relationship("CareLog", back_populates="user")

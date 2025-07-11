@@ -1,15 +1,21 @@
 from pydantic import BaseModel
-import datetime
+from datetime import date, datetime
+from typing import Optional
 
 class CareLogBase(BaseModel):
-    completion_date: datetime.date
+    user_id: int
+    text: str
+    completion_date: date
 
 class CareLogCreate(CareLogBase):
     pass
 
-class CareLog(CareLogBase):
+class CareLogRead(CareLogBase):
     id: int
-    owner_id: int
+    created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+class CareLog(CareLogRead):
+    pass
