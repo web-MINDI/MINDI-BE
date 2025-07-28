@@ -21,3 +21,29 @@ class CareLogRead(CareLogBase):
 
 class CareLog(CareLogRead):
     pass
+
+class PersonalizedGreetingResponse(BaseModel):
+    """개인화된 인사말 응답"""
+    greeting_text: str
+    has_previous_conversation: bool
+    
+class DailyStatusResponse(BaseModel):
+    """일일 기록 현황 응답"""
+    date: date
+    has_conversation: bool
+    conversation_count: int
+    last_conversation_time: Optional[datetime] = None
+
+class ConversationSummaryResponse(BaseModel):
+    """대화 요약 응답"""
+    date: date
+    summary_text: str
+    total_conversations: int
+    key_topics: List[str]
+    emotional_tone: Optional[str] = None
+    duration_minutes: Optional[int] = None
+
+class PreviousConversationContext(BaseModel):
+    """가장 최근 대화한 날의 컨텍스트 (AI 서버 전송용)"""
+    user_id: int
+    recent_conversations: List[dict]

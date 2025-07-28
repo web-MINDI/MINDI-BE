@@ -8,10 +8,11 @@ import shutil
 import os
 import uuid
 from pydub import AudioSegment
+from typing import Optional
 
 from config import settings
 from domain.care import care_schema
-from domain.user import user_schema
+from domain.user import user_schema, user_crud
 from database.session import get_db
 from security import get_current_user
 from . import care_crud
@@ -26,6 +27,9 @@ polly_client = boto3.Session(
 ).client('polly')
 
 AI_STT_REPLY_URL = "http://localhost:8001/stt-and-reply"
+# 🆕 새로운 AI 서버 엔드포인트들
+AI_PERSONALIZED_GREETING_URL = "http://localhost:8001/personalized-greeting"
+AI_CONVERSATION_SUMMARY_URL = "http://localhost:8001/conversation-summary"
 
 def polly_tts(text: str):
     response = polly_client.synthesize_speech(
@@ -109,8 +113,17 @@ def get_last_ai_reply(
     return {"ai_reply": log.ai_reply, "user_question": log.user_question}
 
 @router.post("/greeting")
-async def greeting():
-    greeting_text = "안녕하세요! 민디입니다. 오늘 하루는 어떠셨나요?"
+async def greeting(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """개인화된 인사말 TTS 제공"""
+    
+    # 개인화된 인사말 생성 (내부 함수 호출)
+    personalized_response = await get_personalized_greeting(db, current_user)
+    greeting_text = personalized_response.greeting_text
+    
+    # TTS 변환하여 반환
     return polly_tts(greeting_text)
 
 @router.post("/log", response_model=care_schema.CareLog)
@@ -234,3 +247,169 @@ def end_conversation(
         "last_ai_reply": logs[-1].ai_reply if logs else None
     }
     return summary
+
+@router.post("/personalized-greeting", response_model=care_schema.PersonalizedGreetingResponse)
+async def get_personalized_greeting(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """최근 대화 이력 기반 개인화된 인사말 생성"""
+    
+    # 가장 최근에 대화한 날의 모든 대화 조회
+    recent_conversations = care_crud.get_latest_conversation_date_logs(db, current_user.id)
+    
+    if not recent_conversations:
+        # 최근 대화가 없는 경우 기본 인사말
+        greeting_text = "안녕하세요! 민디입니다. 오늘 하루는 어떠셨나요?"
+        return care_schema.PersonalizedGreetingResponse(
+            greeting_text=greeting_text,
+            has_previous_conversation=False
+        )
+
+    user = user_crud.get_user_by_id(db, current_user.id)
+    age = datetime.now().year - user.birth_year
+    
+    # 가장 최근 대화한 날의 대화 내용을 AI 서버에 전송
+    context_data = {
+        "user_id": current_user.id,
+        "age": age,
+        "recent_conversations": [
+            {
+                "user_question": log.user_question,
+                "ai_reply": log.ai_reply,
+                "conversation_date": log.conversation_date.isoformat(),
+                "created_at": log.created_at.isoformat()
+            }
+            for log in recent_conversations
+        ]
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            ai_response = await client.post(
+                AI_PERSONALIZED_GREETING_URL,
+                json=context_data,
+                timeout=30
+            )
+            if ai_response.status_code != 200:
+                raise HTTPException(status_code=500, detail="AI 서버에서 인사말 생성 실패")
+            
+            ai_data = ai_response.json()
+            greeting_text = ai_data.get("greeting_text", "안녕하세요! 민디입니다.")
+            
+    except Exception as e:
+        print(f"AI 서버 통신 오류: {e}")
+        # AI 서버 오류 시 기본 인사말
+        last_conversation_date = recent_conversations[0].conversation_date
+        greeting_text = f"안녕하세요! 민디입니다. {last_conversation_date.strftime('%m월 %d일')}에 대화를 나누었었는데, 오늘은 어떠신가요?"
+    
+    return care_schema.PersonalizedGreetingResponse(
+        greeting_text=greeting_text,
+        has_previous_conversation=True
+    )
+
+@router.get("/daily-status", response_model=care_schema.DailyStatusResponse)
+def get_daily_status(
+    target_date: Optional[str] = None,  # YYYY-MM-DD 형식
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """일일 기록 현황 조회"""
+    
+    # 날짜 파싱
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.")
+    else:
+        parsed_date = date.today()
+    
+    # 해당 날짜 대화 내역 조회
+    daily_conversations = care_crud.get_daily_conversations(db, current_user.id, parsed_date)
+    has_conversation = len(daily_conversations) > 0
+    last_conversation_time = daily_conversations[-1].created_at if daily_conversations else None
+    
+    return care_schema.DailyStatusResponse(
+        date=parsed_date,
+        has_conversation=has_conversation,
+        conversation_count=len(daily_conversations),
+        last_conversation_time=last_conversation_time
+    )
+
+@router.post("/daily-summary", response_model=care_schema.ConversationSummaryResponse)
+async def get_daily_summary(
+    target_date: Optional[str] = None,  # YYYY-MM-DD 형식
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """일일 대화 요약 생성"""
+    
+    # 날짜 파싱
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.")
+    else:
+        parsed_date = date.today()
+    
+    # 해당 날짜 모든 대화 조회
+    daily_conversations = care_crud.get_daily_conversations(db, current_user.id, parsed_date)
+    
+    if not daily_conversations:
+        raise HTTPException(status_code=404, detail="해당 날짜에 대화 기록이 없습니다.")
+    
+    # AI 서버에 대화 요약 요청
+    summary_data = {
+        "user_id": current_user.id,
+        "target_date": parsed_date.isoformat(),
+        "conversations": [
+            {
+                "user_question": log.user_question,
+                "ai_reply": log.ai_reply,
+                "created_at": log.created_at.isoformat(),
+                "conversation_id": log.conversation_id
+            }
+            for log in daily_conversations
+        ]
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            ai_response = await client.post(
+                AI_CONVERSATION_SUMMARY_URL,
+                json=summary_data,
+                timeout=30
+            )
+            if ai_response.status_code != 200:
+                raise HTTPException(status_code=500, detail="AI 서버에서 요약 생성 실패")
+            
+            ai_data = ai_response.json()
+            summary_text = ai_data.get("summary_text", "요약을 생성할 수 없습니다.")
+            key_topics = ai_data.get("key_topics", [])
+            emotional_tone = ai_data.get("emotional_tone")
+            
+    except Exception as e:
+        print(f"AI 서버 통신 오류: {e}")
+        # AI 서버 오류 시 기본 요약
+        summary_text = f"{parsed_date.strftime('%Y년 %m월 %d일')}에 총 {len(daily_conversations)}번의 대화를 나누었습니다."
+        key_topics = []
+        emotional_tone = None
+    
+    # 대화 지속 시간 계산
+    if len(daily_conversations) > 1:
+        start_time = daily_conversations[0].created_at
+        end_time = daily_conversations[-1].created_at
+        duration_minutes = int((end_time - start_time).total_seconds() / 60)
+    else:
+        duration_minutes = None
+    
+    return care_schema.ConversationSummaryResponse(
+        date=parsed_date,
+        summary_text=summary_text,
+        total_conversations=len(daily_conversations),
+        key_topics=key_topics,
+        emotional_tone=emotional_tone,
+        duration_minutes=duration_minutes
+    )
