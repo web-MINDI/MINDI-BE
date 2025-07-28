@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
 
 class CareLogBase(BaseModel):
     user_id: int
-    text: str
-    completion_date: date
+    user_question: str      # 사용자 질문
+    ai_reply: str          # AI 답변
+    conversation_date: date
+    conversation_id: str   # 대화 세션 ID
 
 class CareLogCreate(CareLogBase):
     pass

@@ -1,0 +1,32 @@
+# FastAPI 및 웹 프레임워크
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# 데이터베이스
+sqlalchemy==2.0.23
+pymysql==1.1.0
+cryptography==41.0.7
+
+# 인증 및 보안
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+
+# AWS 서비스
+boto3==1.34.0
+
+# HTTP 클라이언트
+httpx==0.25.2
+
+# 오디오 처리
+pydub==0.25.1
+
+# 설정 관리
+pydantic-settings==2.1.0
+
+# CORS
+python-cors==1.7.0
+
+# UTF-8 인코딩 지원
+chardet==5.2.0 
