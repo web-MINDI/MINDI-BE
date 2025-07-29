@@ -337,6 +337,35 @@ def get_daily_status(
         last_conversation_time=last_conversation_time
     )
 
+@router.get("/weekly-status", response_model=care_schema.WeeklyStatusResponse)
+def get_weekly_status(
+    target_date: Optional[str] = None,  # YYYY-MM-DD 형식
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """주간 기록 현황 조회 (월요일부터 일요일까지)"""
+    
+    # 날짜 파싱
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.")
+    else:
+        parsed_date = date.today()
+    
+    # 주간 현황 조회
+    weekly_status = care_crud.get_weekly_status(db, current_user.id, parsed_date)
+    
+    return care_schema.WeeklyStatusResponse(
+        week_start=weekly_status["week_start"],
+        week_end=weekly_status["week_end"],
+        daily_status=weekly_status["daily_status"],
+        total_conversations=weekly_status["total_conversations"],
+        completed_days=weekly_status["completed_days"],
+        completion_rate=weekly_status["completion_rate"]
+    )
+
 @router.post("/daily-summary", response_model=care_schema.ConversationSummaryResponse)
 async def get_daily_summary(
     target_date: Optional[str] = None,  # YYYY-MM-DD 형식

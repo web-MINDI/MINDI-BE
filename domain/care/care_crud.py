@@ -120,3 +120,61 @@ def get_conversation_categories_from_previous_day(db: Session, user_id: int, tar
             categories.append('social')
     
     return list(set(categories))  # 중복 제거
+
+def get_weekly_status(db: Session, user_id: int, target_date: Optional[date] = None) -> dict:
+    """주간 기록 현황 조회 (월요일부터 일요일까지)"""
+    if target_date is None:
+        target_date = date.today()
+    
+    # 해당 주의 월요일과 일요일 계산
+    days_since_monday = target_date.weekday()
+    week_start = target_date - timedelta(days=days_since_monday)  # 월요일
+    week_end = week_start + timedelta(days=6)  # 일요일
+    
+    # 주간 대화 로그 조회
+    weekly_logs = get_care_logs_for_week(db, user_id, week_start, week_end)
+    
+    # 일별 상태 생성 (월요일부터 일요일까지)
+    daily_status = []
+    total_conversations = 0
+    completed_days = 0
+    
+    for i in range(7):
+        current_date = week_start + timedelta(days=i)
+        day_logs = [log for log in weekly_logs if log.conversation_date == current_date]
+        
+        has_conversation = len(day_logs) > 0
+        conversation_count = len(day_logs)
+        last_conversation_time = day_logs[-1].created_at if day_logs else None
+        
+        if has_conversation:
+            completed_days += 1
+            total_conversations += conversation_count
+        
+        daily_status.append({
+            "date": current_date,
+            "day_of_week": ["월", "화", "수", "목", "금", "토", "일"][i],
+            "has_conversation": has_conversation,
+            "conversation_count": conversation_count,
+            "last_conversation_time": last_conversation_time
+        })
+    
+    # 완료율 계산
+    completion_rate = completed_days / 7.0 if completed_days > 0 else 0.0
+    
+    return {
+        "week_start": week_start,
+        "week_end": week_end,
+        "daily_status": daily_status,
+        "total_conversations": total_conversations,
+        "completed_days": completed_days,
+        "completion_rate": completion_rate
+    }
+
+def get_previous_day_conversations(db: Session, user_id: int, target_date: Optional[date] = None) -> List[CareLog]:
+    """전날 대화 조회 (키워드 추출용)"""
+    if target_date is None:
+        target_date = date.today()
+    
+    previous_date = target_date - timedelta(days=1)
+    return get_daily_conversations(db, user_id, previous_date)

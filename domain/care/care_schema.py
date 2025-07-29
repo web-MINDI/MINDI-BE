@@ -34,6 +34,15 @@ class DailyStatusResponse(BaseModel):
     conversation_count: int
     last_conversation_time: Optional[datetime] = None
 
+class WeeklyStatusResponse(BaseModel):
+    """주간 기록 현황 응답"""
+    week_start: date
+    week_end: date
+    daily_status: List[dict]  # 7일간 일별 상태
+    total_conversations: int
+    completed_days: int
+    completion_rate: float  # 완료율 (0.0 ~ 1.0)
+
 class ConversationSummaryResponse(BaseModel):
     """대화 요약 응답"""
     date: date
