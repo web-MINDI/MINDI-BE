@@ -14,6 +14,7 @@ except locale.Error:
 from domain.user import user_router, user_model
 from domain.diagnosis import diagnosis_router
 from domain.care import care_router, care_model
+from domain.auth import auth_router
 from database.session import engine
 
 user_model.Base.metadata.create_all(bind=engine)
@@ -45,6 +46,7 @@ app.add_middleware(
 app.include_router(user_router.router, prefix="/api")
 app.include_router(diagnosis_router.router, prefix="/api")
 app.include_router(care_router.router, prefix="/api")
+app.include_router(auth_router.router, prefix="/api")
 
 @app.get("/")
 async def root():
