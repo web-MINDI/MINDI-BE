@@ -12,13 +12,14 @@ except locale.Error:
         pass  # 기본 로케일 사용
 
 from domain.user import user_router, user_model
-from domain.diagnosis import diagnosis_router
+from domain.diagnosis import diagnosis_router, diagnosis_model
 from domain.care import care_router, care_model
 from domain.auth import auth_router
 from database.session import engine
 
 user_model.Base.metadata.create_all(bind=engine)
 care_model.Base.metadata.create_all(bind=engine)
+diagnosis_model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="MINDI Backend API",

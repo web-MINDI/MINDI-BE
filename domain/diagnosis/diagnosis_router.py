@@ -6,11 +6,13 @@ import httpx
 import os
 import uuid
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
+from typing import List
 
 from database.session import get_db
 from domain.user import user_schema, user_crud
 from security import get_current_user
+from . import diagnosis_crud, diagnosis_schema
 
 # APIRouter 인스턴스 생성
 router = APIRouter(
@@ -138,7 +140,7 @@ async def start_diagnosis(
     
     return diagnosis_session
 
-@router.post("/submit-diagnosis")
+@router.post("/submit-diagnosis", response_model=diagnosis_schema.DiagnosisLog)
 async def submit_diagnosis(
     session_id: str = Form(...),
     db: Session = Depends(get_db),
@@ -171,26 +173,78 @@ async def submit_diagnosis(
             
             diagnosis_result = ai_response.json()
             
-            # TODO: 진단 결과를 데이터베이스에 저장
-            # diagnosis_crud.create_diagnosis_log(db, diagnosis_result)
+            # 진단 결과를 데이터베이스에 저장
+            diagnosis_log_data = diagnosis_schema.DiagnosisLogCreate(
+                session_id=session_id,
+                user_id=current_user.id,
+                diagnosis_date=date.today(),
+                total_score=diagnosis_result.get("total_score", 0),
+                language_score=diagnosis_result.get("language_score", 0),
+                acoustic_score=diagnosis_result.get("acoustic_score", 0),
+                check_score=diagnosis_result.get("check_score", 0),
+                dementia_result=diagnosis_result.get("dementia_result", 0),
+                risk_level=diagnosis_result.get("risk_level", "normal"),
+                threshold=diagnosis_result.get("threshold", 0),
+                detailed_analysis=diagnosis_result.get("detailed_analysis", ""),
+                user_age=user_age,
+                user_education=user_education
+            )
             
-            return diagnosis_result
+            saved_diagnosis = diagnosis_crud.create_diagnosis_log(db, diagnosis_log_data)
+            
+            return saved_diagnosis
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"진단 제출 오류: {e}")
 
-@router.get("/diagnosis-history")
+@router.get("/result", response_model=diagnosis_schema.DiagnosisLog)
+async def get_latest_diagnosis_result(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """사용자의 최신 진단 결과 조회"""
+    
+    latest_diagnosis = diagnosis_crud.get_latest_diagnosis_by_user(db, current_user.id)
+    if not latest_diagnosis:
+        raise HTTPException(status_code=404, detail="진단 결과를 찾을 수 없습니다.")
+    
+    return latest_diagnosis
+
+@router.get("/result/{diagnosis_id}", response_model=diagnosis_schema.DiagnosisLog)
+async def get_diagnosis_result_by_id(
+    diagnosis_id: int,
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """특정 진단 ID로 진단 결과 조회"""
+    
+    diagnosis = diagnosis_crud.get_diagnosis_log_by_id(db, diagnosis_id)
+    if not diagnosis:
+        raise HTTPException(status_code=404, detail="진단 결과를 찾을 수 없습니다.")
+    
+    # 본인의 진단 결과만 조회 가능
+    if diagnosis.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="다른 사용자의 진단 결과는 조회할 수 없습니다.")
+    
+    return diagnosis
+
+@router.get("/history", response_model=List[diagnosis_schema.DiagnosisHistoryResponse])
 async def get_diagnosis_history(
+    limit: int = 10,
     db: Session = Depends(get_db),
     current_user: user_schema.User = Depends(get_current_user)
 ):
     """사용자의 진단 기록 조회"""
     
-    # TODO: 진단 기록 조회 로직 구현
-    # history = diagnosis_crud.get_diagnosis_history(db, current_user.id)
+    history = diagnosis_crud.get_diagnosis_history_by_user(db, current_user.id, limit)
+    return history
+
+@router.get("/statistics")
+async def get_diagnosis_statistics(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """사용자의 진단 통계 정보 조회"""
     
-    # 임시 응답
-    return {
-        "message": "진단 기록 조회 기능은 아직 구현 중입니다.",
-        "user_id": current_user.id
-    }
+    statistics = diagnosis_crud.get_diagnosis_statistics_by_user(db, current_user.id)
+    return statistics

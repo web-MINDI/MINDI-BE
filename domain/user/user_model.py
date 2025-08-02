@@ -16,3 +16,4 @@ class User(Base):
     education = Column(String(50))
 
     care_logs = relationship("CareLog", back_populates="user")
+    diagnosis_logs = relationship("DiagnosisLog", back_populates="user")
