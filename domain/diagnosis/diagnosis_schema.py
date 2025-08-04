@@ -14,11 +14,10 @@ class DiagnosisLogCreate(BaseModel):
     risk_level: str
     threshold: int
     detailed_analysis: Optional[str] = None
-    user_age: int
-    user_education: str
 
 class DiagnosisLog(DiagnosisLogCreate):
     id: int
+    user_name: str
     created_at: datetime
     
     class Config:

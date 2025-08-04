@@ -25,10 +25,6 @@ class DiagnosisLog(Base):
     # 상세 분석
     detailed_analysis = Column(Text, nullable=True)
     
-    # 사용자 정보 (진단 시점)
-    user_age = Column(Integer, nullable=False)
-    user_education = Column(String(50), nullable=False)
-    
     # 타임스탬프
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     

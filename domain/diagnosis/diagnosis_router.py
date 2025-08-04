@@ -186,8 +186,6 @@ async def submit_diagnosis(
                 risk_level=diagnosis_result.get("risk_level", "normal"),
                 threshold=diagnosis_result.get("threshold", 0),
                 detailed_analysis=diagnosis_result.get("detailed_analysis", ""),
-                user_age=user_age,
-                user_education=user_education
             )
             
             saved_diagnosis = diagnosis_crud.create_diagnosis_log(db, diagnosis_log_data)
@@ -208,6 +206,12 @@ async def get_latest_diagnosis_result(
     if not latest_diagnosis:
         raise HTTPException(status_code=404, detail="진단 결과를 찾을 수 없습니다.")
     
+    user = user_crud.get_user_by_id(db, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자 정보를 찾을 수 없습니다.")
+    
+    latest_diagnosis.user_name = user.name
+    
     return latest_diagnosis
 
 @router.get("/result/{diagnosis_id}", response_model=diagnosis_schema.DiagnosisLog)
@@ -225,6 +229,12 @@ async def get_diagnosis_result_by_id(
     # 본인의 진단 결과만 조회 가능
     if diagnosis.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="다른 사용자의 진단 결과는 조회할 수 없습니다.")
+    
+    user = user_crud.get_user_by_id(db, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자 정보를 찾을 수 없습니다.")
+    
+    diagnosis.user_name = user.name
     
     return diagnosis
 
