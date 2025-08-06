@@ -98,6 +98,12 @@ def check_daily_conversation_status(db: Session, user_id: int, target_date: Opti
     
     return conversation_count > 0
 
+def get_total_conversation_count(db: Session, user_id: int) -> int:
+    """사용자의 총 대화 횟수 반환"""
+    return db.query(CareLog).filter(
+        CareLog.user_id == user_id
+    ).count()
+
 def get_conversation_categories_from_previous_day(db: Session, user_id: int, target_date: Optional[date] = None) -> List[str]:
     """전날 대화에서 주요 카테고리/키워드 추출 (기본 구현)"""
     previous_conversations = get_previous_day_conversations(db, user_id, target_date)

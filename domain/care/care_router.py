@@ -142,10 +142,20 @@ def get_last_log(
     db: Session = Depends(get_db),
     current_user: user_schema.User = Depends(get_current_user)
 ):
-    log = care_crud.get_last_care_log_by_user(db, user_id=current_user.id)
+    """사용자의 가장 최근 대화 로그 조회"""
+    log = care_crud.get_last_care_log_by_user(db, current_user.id)
     if not log:
-        raise HTTPException(status_code=404, detail="No log found for user.")
+        raise HTTPException(status_code=404, detail="대화 기록이 없습니다.")
     return log
+
+@router.get("/total-count")
+def get_total_conversation_count(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """사용자의 총 대화 횟수 조회"""
+    total_count = care_crud.get_total_conversation_count(db, current_user.id)
+    return {"total_conversations": total_count}
 
 @router.get("/logs/week", response_model=list[care_schema.CareLog])
 def get_weekly_logs(
