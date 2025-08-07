@@ -14,6 +14,7 @@ class User(Base):
     birth_month = Column(Integer)
     birth_day = Column(Integer)
     education = Column(String(50))
+    subscription_type = Column(String(20), default="standard")  # standard, plus, premium
 
     care_logs = relationship("CareLog", back_populates="user")
     diagnosis_logs = relationship("DiagnosisLog", back_populates="user")

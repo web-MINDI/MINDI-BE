@@ -74,3 +74,23 @@ async def validate_token(current_user = Depends(get_current_user)):
 async def get_current_user_info(current_user = Depends(get_current_user)):
     """현재 로그인한 사용자 정보 조회"""
     return current_user
+
+@router.put("/subscription", response_model=user_schema.User)
+async def update_subscription(
+    subscription_type: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """사용자의 구독 타입 업데이트"""
+    valid_types = ["standard", "plus", "premium"]
+    if subscription_type not in valid_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"유효하지 않은 구독 타입입니다. 가능한 타입: {', '.join(valid_types)}"
+        )
+    
+    updated_user = user_crud.update_subscription_type(db, current_user.id, subscription_type)
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    
+    return updated_user

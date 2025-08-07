@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     birth_month: Optional[int] = None
     birth_day: Optional[int] = None
     education: Optional[str] = None
+    subscription_type: Optional[str] = "standard"
 
 class UserCreate(UserBase):
     password: str
