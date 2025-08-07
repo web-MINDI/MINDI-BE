@@ -94,3 +94,26 @@ async def update_subscription(
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
     
     return updated_user
+
+@router.put("/profile", response_model=user_schema.User)
+async def update_user_profile(
+    user_update: user_schema.UserUpdate,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """사용자 프로필 정보 업데이트"""
+    updated_user = user_crud.update_user_info(
+        db, 
+        current_user.id, 
+        user_update.name,
+        user_update.gender,
+        user_update.birth_year,
+        user_update.birth_month,
+        user_update.birth_day,
+        user_update.education
+    )
+    
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    
+    return updated_user

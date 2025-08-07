@@ -43,6 +43,23 @@ def update_subscription_type(db: Session, user_id: int, subscription_type: str):
     db.refresh(user)
     return user
 
+def update_user_info(db: Session, user_id: int, name: str, gender: str, birth_year: int, birth_month: int, birth_day: int, education: str):
+    """사용자 정보를 업데이트"""
+    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    if not user:
+        return None
+    
+    user.name = name
+    user.gender = gender
+    user.birth_year = birth_year
+    user.birth_month = birth_month
+    user.birth_day = birth_day
+    user.education = education
+    
+    db.commit()
+    db.refresh(user)
+    return user
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
