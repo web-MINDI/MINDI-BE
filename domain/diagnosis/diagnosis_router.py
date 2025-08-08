@@ -13,6 +13,7 @@ from database.session import get_db
 from domain.user import user_schema, user_crud
 from security import get_current_user
 from . import diagnosis_crud, diagnosis_schema
+from domain.report import report_crud, report_schema
 
 # APIRouter 인스턴스 생성
 router = APIRouter(
@@ -160,11 +161,60 @@ async def submit_diagnosis(
             )
             
             saved_diagnosis = diagnosis_crud.create_diagnosis_log(db, diagnosis_log_data)
-            
-            return saved_diagnosis
-            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"진단 제출 오류: {e}")
+
+    if (user.subscription_type != "standard"):
+        try:
+            async with httpx.AsyncClient() as client:
+                ai_response = await client.post(
+                    f"{AI_DIAGNOSIS_URL}/generate-diagnosis-report",
+                    json={
+                        "user_id": current_user.id,
+                        "acoustic_score_vit": diagnosis_result.get("acoustic_score_vit", 0),
+                        "acoustic_score_lgbm": diagnosis_result.get("acoustic_score_lgbm", 0),
+                        "language_score_BERT": diagnosis_result.get("language_score_BERT", 0),
+                        "language_score_gpt": diagnosis_result.get("language_score_gpt", 0),
+                        "user_name": current_user.name
+                    },
+                    timeout=120
+                )
+
+                if ai_response.status_code != 200:
+                    raise HTTPException(status_code=500, detail="AI 서버에서 리포트 생성 실패")
+                
+                ai_response = ai_response.json()
+                
+                # 리포트 데이터를 DB에 저장
+                report_data = {
+                    "report_html": ai_response["report_html"],
+                    "report_text": ai_response["report_text"],
+                    "good_points": ai_response["good_points"],
+                    "bad_points": ai_response["bad_points"],
+                    "recommendations": ai_response["recommendations"],
+                    "scores": {
+                        "acoustic_score_vit": diagnosis_result.get("acoustic_score_vit", 0),
+                        "acoustic_score_lgbm": diagnosis_result.get("acoustic_score_lgbm", 0),
+                        "language_score_BERT": diagnosis_result.get("language_score_BERT", 0),
+                        "language_score_gpt": diagnosis_result.get("language_score_gpt", 0)
+                    }
+                }
+                
+                report_log = report_crud.create_report_log(
+                    db,
+                    report_schema.ReportLogCreate(
+                        user_id=current_user.id,
+                        report_type="diagnosis",
+                        report_data=report_data
+                    )
+                )
+            return {"saved_diagnosis": saved_diagnosis, "report_log": report_log}
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"리포트 생성 오류: {e}")
+    
+    return {"saved_diagnosis": saved_diagnosis}
+
 
 @router.get("/result", response_model=diagnosis_schema.DiagnosisLog)
 async def get_latest_diagnosis_result(
