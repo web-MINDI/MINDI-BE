@@ -7,6 +7,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     phone = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=True)  # 이메일 필드 추가
     hashed_password = Column(String(255), nullable=False)
     name = Column(String(100), nullable=False)
     gender = Column(String(10))

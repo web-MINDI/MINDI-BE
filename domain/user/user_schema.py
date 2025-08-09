@@ -1,8 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 class UserBase(BaseModel):
     phone: str
+    email: Optional[str] = None
     name: str
     gender: Optional[str] = None
     birth_year: Optional[int] = None
@@ -16,6 +17,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     name: str
+    email: Optional[str] = None
     gender: str
     birth_year: int
     birth_month: int

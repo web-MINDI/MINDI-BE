@@ -12,9 +12,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login")
 def get_user_by_phone(db: Session, phone: str):
     return db.query(user_model.User).filter(user_model.User.phone == phone).first()
 
+def get_user_by_email(db: Session, email: str):
+    """이메일로 사용자 조회"""
+    return db.query(user_model.User).filter(user_model.User.email == email).first()
+
 def create_user(db: Session, user: user_schema.UserCreate, hashed_password: str):
     db_user = user_model.User(
         phone=user.phone,
+        email=user.email,  # 이메일 필드 추가
         hashed_password=hashed_password,
         name=user.name,
         gender=user.gender,
@@ -49,18 +54,26 @@ def update_subscription_type(db: Session, user_id: int, subscription_type: str):
     db.refresh(user)
     return user
 
-def update_user_info(db: Session, user_id: int, name: str, gender: str, birth_year: int, birth_month: int, birth_day: int, education: str):
+def update_user_info(db: Session, user_id: int, name: str, email: str = None, gender: str = None, birth_year: int = None, birth_month: int = None, birth_day: int = None, education: str = None):
     """사용자 정보를 업데이트"""
     user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
     if not user:
         return None
     
-    user.name = name
-    user.gender = gender
-    user.birth_year = birth_year
-    user.birth_month = birth_month
-    user.birth_day = birth_day
-    user.education = education
+    if name is not None:
+        user.name = name
+    if email is not None:
+        user.email = email
+    if gender is not None:
+        user.gender = gender
+    if birth_year is not None:
+        user.birth_year = birth_year
+    if birth_month is not None:
+        user.birth_month = birth_month
+    if birth_day is not None:
+        user.birth_day = birth_day
+    if education is not None:
+        user.education = education
     
     db.commit()
     db.refresh(user)

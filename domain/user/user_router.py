@@ -36,11 +36,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/signup", response_model=user_schema.User)
 def signup(user: user_schema.UserCreate, db: Session = Depends(get_db)):
+    # 전화번호 중복 확인
     db_user = user_crud.get_user_by_phone(db, phone=user.phone)
     if db_user:
         raise HTTPException(
             status_code=400, detail="이미 등록된 전화번호입니다."
         )
+    
+    # 이메일 중복 확인 (이메일이 제공된 경우)
+    if user.email:
+        db_user_by_email = user_crud.get_user_by_email(db, email=user.email)
+        if db_user_by_email:
+            raise HTTPException(
+                status_code=400, detail="이미 등록된 이메일입니다."
+            )
+    
     hashed_password = security.get_password_hash(user.password)
     return user_crud.create_user(db=db, user=user, hashed_password=hashed_password)
 
@@ -102,10 +112,19 @@ async def update_user_profile(
     db: Session = Depends(get_db)
 ):
     """사용자 프로필 정보 업데이트"""
+    # 이메일 중복 확인 (이메일이 변경되는 경우)
+    if user_update.email and user_update.email != current_user.email:
+        db_user_by_email = user_crud.get_user_by_email(db, email=user_update.email)
+        if db_user_by_email:
+            raise HTTPException(
+                status_code=400, detail="이미 등록된 이메일입니다."
+            )
+    
     updated_user = user_crud.update_user_info(
         db, 
         current_user.id, 
         user_update.name,
+        user_update.email,
         user_update.gender,
         user_update.birth_year,
         user_update.birth_month,
