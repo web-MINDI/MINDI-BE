@@ -29,4 +29,7 @@ pydantic-settings==2.1.0
 python-cors==1.7.0
 
 # UTF-8 인코딩 지원
-chardet==5.2.0 
+chardet==5.2.0
+
+# 스케줄링
+APScheduler==3.10.4 

@@ -1,4 +1,5 @@
 import locale
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,18 +18,28 @@ from domain.care import care_router, care_model
 from domain.auth import auth_router
 from domain.report import report_router, report_model
 from database.session import engine
+from services.scheduler_service import scheduler_service
 
 user_model.Base.metadata.create_all(bind=engine)
 care_model.Base.metadata.create_all(bind=engine)
 diagnosis_model.Base.metadata.create_all(bind=engine)
 report_model.Base.metadata.create_all(bind=engine)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler_service.start()
+    yield
+    # Shutdown
+    scheduler_service.stop()
+
 app = FastAPI(
     title="MINDI Backend API",
     description="치매 환자 케어 챗봇 서비스 백엔드 API",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS 미들웨어 설정

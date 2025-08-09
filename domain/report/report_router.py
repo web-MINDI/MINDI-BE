@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
 import httpx
-from datetime import datetime
+from datetime import datetime, date
 from typing import List
 
 from config import settings
@@ -10,6 +10,7 @@ from domain.user import user_schema, user_crud
 from database.session import get_db
 from security import get_current_user
 from services.email_service import email_service
+from services.scheduler_service import scheduler_service
 
 router = APIRouter(
     prefix="/report",
@@ -197,3 +198,80 @@ async def get_report_detail(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"리포트 상세 조회 실패: {str(e)}")
+
+@router.post("/scheduler/start")
+async def start_scheduler(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """스케줄러 시작 (관리자용)"""
+    try:
+        # 관리자 권한 확인 (임시로 모든 사용자 허용)
+        scheduler_service.start()
+        return {"message": "스케줄러가 성공적으로 시작되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"스케줄러 시작 실패: {str(e)}")
+
+@router.post("/scheduler/stop")
+async def stop_scheduler(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """스케줄러 중지 (관리자용)"""
+    try:
+        scheduler_service.stop()
+        return {"message": "스케줄러가 중지되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"스케줄러 중지 실패: {str(e)}")
+
+@router.post("/scheduler/generate-weekly")
+async def generate_weekly_report_manual(
+    user_id: int = Body(...),
+    start_date: str = Body(...),  # YYYY-MM-DD
+    end_date: str = Body(...),    # YYYY-MM-DD
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """수동으로 주간 케어 리포트 생성 (테스트용)"""
+    try:
+        # 날짜 파싱
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+        
+        # 스케줄러를 통한 수동 리포트 생성
+        success = await scheduler_service.generate_manual_weekly_report(
+            user_id, start, end
+        )
+        
+        if success:
+            return {"message": "주간 케어 리포트가 성공적으로 생성되었습니다."}
+        else:
+            raise HTTPException(status_code=500, detail="리포트 생성에 실패했습니다.")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"수동 리포트 생성 실패: {str(e)}")
+
+@router.get("/scheduler/status")
+async def get_scheduler_status(
+    db: Session = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user)
+):
+    """스케줄러 상태 조회"""
+    try:
+        is_running = scheduler_service.scheduler.running
+        jobs = scheduler_service.scheduler.get_jobs()
+        
+        return {
+            "is_running": is_running,
+            "job_count": len(jobs),
+            "jobs": [
+                {
+                    "id": job.id,
+                    "name": job.name,
+                    "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None
+                }
+                for job in jobs
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"스케줄러 상태 조회 실패: {str(e)}")

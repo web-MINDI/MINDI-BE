@@ -32,6 +32,12 @@ def create_user(db: Session, user: user_schema.UserCreate, hashed_password: str)
 def get_user_by_id(db: Session, user_id: int):
     return db.query(user_model.User).filter(user_model.User.id == user_id).first()
 
+def get_users_by_subscription_type(db: Session, subscription_types: list):
+    """구독 타입별 사용자 목록 조회"""
+    return db.query(user_model.User).filter(
+        user_model.User.subscription_type.in_(subscription_types)
+    ).all()
+
 def update_subscription_type(db: Session, user_id: int, subscription_type: str):
     """사용자의 구독 타입을 업데이트"""
     user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
