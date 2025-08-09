@@ -9,6 +9,7 @@ from domain.report import report_schema, report_crud
 from domain.user import user_schema, user_crud
 from database.session import get_db
 from security import get_current_user
+from services.email_service import email_service
 
 router = APIRouter(
     prefix="/report",
@@ -118,23 +119,27 @@ async def send_report_email(
 ):
     """리포트 이메일 발송"""
     try:
-        # AI 서버에 이메일 발송 요청
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{AI_REPORT_URL}/send-email-report",
-                json={
-                    "to_email": request.to_email,
-                    "subject": request.subject,
-                    "html_content": request.html_content,
-                    "report_type": request.report_type,
-                    "user_id": request.user_id
-                },
-                timeout=30
+        # 리포트 타입에 따라 적절한 이메일 발송
+        success = False
+        
+        if request.report_type == "diagnosis":
+            # 진단 리포트 이메일 발송
+            success = email_service.send_email(
+                to_email=request.to_email,
+                subject=request.subject,
+                html_content=request.html_content
             )
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail="이메일 발송 실패")
-            
+        elif request.report_type == "care":
+            # 케어 리포트 이메일 발송
+            success = email_service.send_email(
+                to_email=request.to_email,
+                subject=request.subject,
+                html_content=request.html_content
+            )
+        else:
+            raise HTTPException(status_code=400, detail="지원하지 않는 리포트 타입입니다.")
+        
+        if success:
             # 발송 상태 업데이트
             report_crud.update_report_sent_status(db, request.user_id, datetime.now())
             
@@ -142,6 +147,8 @@ async def send_report_email(
                 message="이메일이 성공적으로 발송되었습니다.",
                 sent_at=datetime.now().isoformat()
             )
+        else:
+            raise HTTPException(status_code=500, detail="이메일 발송에 실패했습니다.")
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"이메일 발송 실패: {str(e)}")

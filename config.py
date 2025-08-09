@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     AWS_REGION: str = "us-northeast-2"
+    
+    # 이메일 설정
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    FROM_EMAIL: str = "noreply@mindi.com"
+    FROM_NAME: str = "MINDI"
 
     model_config = SettingsConfigDict(env_file=".env")
 

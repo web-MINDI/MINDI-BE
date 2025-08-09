@@ -14,6 +14,7 @@ from domain.user import user_schema, user_crud
 from security import get_current_user
 from . import diagnosis_crud, diagnosis_schema
 from domain.report import report_crud, report_schema
+from services.email_service import email_service
 
 # APIRouter 인스턴스 생성
 router = APIRouter(
@@ -208,6 +209,30 @@ async def submit_diagnosis(
                         report_data=report_data
                     )
                 )
+                
+                # 유료 구독자에게 이메일 발송
+                if user.email:
+                    try:
+                        email_success = email_service.send_diagnosis_report(
+                            to_email=user.email,
+                            user_name=current_user.name,
+                            report_html=ai_response["report_html"],
+                            report_text=ai_response["report_text"],
+                            scores={
+                                "acoustic_score_vit": diagnosis_result.get("acoustic_score_vit", 0),
+                                "acoustic_score_lgbm": diagnosis_result.get("acoustic_score_lgbm", 0),
+                                "language_score_BERT": diagnosis_result.get("language_score_BERT", 0),
+                                "language_score_gpt": diagnosis_result.get("language_score_gpt", 0)
+                            }
+                        )
+                        
+                        if email_success:
+                            # 이메일 발송 상태 업데이트
+                            report_crud.update_report_sent_status(db, report_log.id, datetime.now())
+                    except Exception as email_error:
+                        print(f"이메일 발송 실패: {email_error}")
+                        # 이메일 발송 실패는 전체 프로세스를 중단하지 않음
+                
             return {"saved_diagnosis": saved_diagnosis, "report_log": report_log}
             
         except Exception as e:
