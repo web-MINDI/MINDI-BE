@@ -16,13 +16,13 @@ class UserCreate(UserBase):
     password: str
 
 class UserUpdate(BaseModel):
-    name: str
+    name: Optional[str] = None
     email: Optional[str] = None
-    gender: str
-    birth_year: int
-    birth_month: int
-    birth_day: int
-    education: str
+    gender: Optional[str] = None
+    birth_year: Optional[int] = None
+    birth_month: Optional[int] = None
+    birth_day: Optional[int] = None
+    education: Optional[str] = None
 
 class User(UserBase):
     id: int

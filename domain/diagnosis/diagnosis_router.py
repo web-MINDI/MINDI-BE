@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 # AI 서버 URL
-AI_DIAGNOSIS_URL = "http://localhost:8001/diagnose"
+AI_DIAGNOSIS_URL = "http://localhost:8001/diagnosis"
 
 # 녹음 파일을 저장할 디렉토리 설정
 UPLOAD_DIRECTORY = Path("uploads/")
@@ -188,11 +188,10 @@ async def submit_diagnosis(
                 
                 # 리포트 데이터를 DB에 저장
                 report_data = {
-                    "report_html": ai_response["report_html"],
-                    "report_text": ai_response["report_text"],
-                    "good_points": ai_response["good_points"],
-                    "bad_points": ai_response["bad_points"],
-                    "recommendations": ai_response["recommendations"],
+                    "evaluate_good_list": ai_response["evaluate_good_list"],
+                    "evaluate_bad_list": ai_response["evaluate_bad_list"],
+                    "result_good_list": ai_response["result_good_list"],
+                    "result_bad_list": ai_response["result_bad_list"],
                     "scores": {
                         "acoustic_score_vit": diagnosis_result.get("acoustic_score_vit", 0),
                         "acoustic_score_lgbm": diagnosis_result.get("acoustic_score_lgbm", 0),
@@ -216,8 +215,10 @@ async def submit_diagnosis(
                         email_success = email_service.send_diagnosis_report(
                             to_email=user.email,
                             user_name=current_user.name,
-                            report_html=ai_response["report_html"],
-                            report_text=ai_response["report_text"],
+                            evaluate_good_list=ai_response["evaluate_good_list"],
+                            evaluate_bad_list=ai_response["evaluate_bad_list"],
+                            result_good_list=ai_response["result_good_list"],
+                            result_bad_list=ai_response["result_bad_list"],
                             scores={
                                 "acoustic_score_vit": diagnosis_result.get("acoustic_score_vit", 0),
                                 "acoustic_score_lgbm": diagnosis_result.get("acoustic_score_lgbm", 0),
@@ -233,12 +234,12 @@ async def submit_diagnosis(
                         print(f"이메일 발송 실패: {email_error}")
                         # 이메일 발송 실패는 전체 프로세스를 중단하지 않음
                 
-            return {"saved_diagnosis": saved_diagnosis, "report_log": report_log}
-            
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"리포트 생성 오류: {e}")
     
-    return {"saved_diagnosis": saved_diagnosis}
+    saved_diagnosis.user_name = user.name
+    
+    return saved_diagnosis
 
 
 @router.get("/result", response_model=diagnosis_schema.DiagnosisLog)

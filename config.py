@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    FROM_EMAIL: str = "noreply@mindi.com"
+    FROM_EMAIL: str = ""  # SMTP_USERNAME과 동일하게 설정
     FROM_NAME: str = "MINDI"
 
     model_config = SettingsConfigDict(env_file=".env")

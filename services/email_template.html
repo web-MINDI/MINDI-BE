@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MINDI 사용자 인지 기능 분석 리포트</title>
+
+  <style>
+    /* 이메일 호환성을 위한 기본 스타일 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      color: #0b1020;
+      background: #ffffff;
+      line-height: 1.6;
+    }
+
+    .page {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #ffffff;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .title {
+      font-weight: bold;
+      font-size: 24px;
+      line-height: 1.2;
+      color: #0b1020;
+      margin: 0 0 10px 0;
+    }
+
+    .date {
+      color: #6b7280;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .section {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 25px 0 15px 0;
+      color: #0b1020;
+      border-left: 4px solid #0b1020;
+      padding-left: 15px;
+    }
+
+    .note {
+      font-weight: bold;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #fff;
+      margin: 15px 0;
+      text-align: center;
+    }
+
+    .note.green {
+      background: #17b26a;
+    }
+
+    .note.red {
+      background: #ef4444;
+    }
+
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+      margin: 15px 0;
+    }
+
+    .hint {
+      border: 2px solid;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: bold;
+      margin: 15px 0 10px 0;
+      display: inline-block;
+    }
+
+    .hint.green {
+      border-color: #17b26a;
+      color: #17b26a;
+    }
+
+    .hint.red {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .muted {
+      color: #667085;
+    }
+
+    .chart-card {
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      margin: 15px 0;
+    }
+
+    .chart-title {
+      font-weight: bold;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .chart-wrap {
+      border-top: 1px dashed #e5e7eb;
+      padding-top: 16px;
+    }
+
+    .chart-legend {
+      font-size: 12px;
+      color: #98a2b3;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* 이메일 호환 차트 - 테이블 기반 */
+    .chart-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .chart-table td {
+      padding: 0;
+      text-align: center;
+      vertical-align: bottom;
+      position: relative;
+    }
+
+    .chart-bar {
+      background: #2563eb;
+      border: 1px solid #1e40af;
+      border-radius: 2px 2px 0 0;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .chart-label {
+      font-size: 11px;
+      color: #64748b;
+      padding: 5px 0;
+      font-weight: 500;
+    }
+
+    .metric {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #fff;
+      margin: 10px 0;
+    }
+
+    .metric-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #0b1020;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: #667085;
+      margin-bottom: 10px;
+    }
+
+    .metric-score {
+      text-align: right;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: #f2f4f7;
+      font-size: 12px;
+      color: #111827;
+      font-weight: bold;
+    }
+
+    .dir {
+      font-size: 16px;
+      margin-left: 8px;
+    }
+
+    .dir.up {
+      color: #15b79e;
+    }
+
+    .dir.down {
+      color: #f97066;
+    }
+
+    .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 25px 0;
+    }
+
+    .banner {
+      background: #2e90fa;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin: 15px 0;
+      text-align: center;
+    }
+
+    .blue-outline {
+      border: 2px solid #2e90fa;
+      color: #1a5fb5;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin: 15px 0 10px 0;
+      background: #fff;
+      display: inline-block;
+    }
+
+    .clean {
+      padding-left: 20px;
+      margin: 10px 0;
+    }
+
+    .clean li {
+      margin: 8px 0;
+    }
+
+    .mb8 { margin-bottom: 8px; }
+    .mb12 { margin-bottom: 12px; }
+    .mb16 { margin-bottom: 16px; }
+    .mb20 { margin-bottom: 20px; }
+
+    /* 반응형 테이블 */
+    @media only screen and (max-width: 600px) {
+      .page {
+        padding: 15px;
+      }
+      
+      .title {
+        font-size: 20px;
+      }
+      
+      .section {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <h1 class="title">MINDI 사용자 인지 기능 분석 리포트</h1>
+      <div class="date">{{CURRENT_DATE}}</div>
+    </div>
+
+    <!-- 진단 결과 분석 -->
+    <h2 class="section">진단 결과 분석</h2>
+
+    {{#GOOD_LIST}}
+    <div class="note green">잘하고 있어요!</div>
+    <div class="card">
+      <p class="mb8">
+        {{#EVALUATE_GOOD_LIST}}
+        {{.}}
+        {{/EVALUATE_GOOD_LIST}}
+      </p>
+
+      <div class="hint green">MINDI가 추천하는 케어 포인트</div>
+      <ul class="clean muted">
+        {{#RESULT_GOOD_LIST}}
+        {{.}}
+        {{/RESULT_GOOD_LIST}}
+      </ul>
+    </div>
+    {{/GOOD_LIST}}
+
+    {{#BAD_LIST}}
+    <div class="note red">노력이 필요해요!</div>
+    <div class="card">
+      <p class="mb8">
+        {{#EVALUATE_BAD_LIST}}
+        {{.}}
+        {{/EVALUATE_BAD_LIST}}
+      </p>
+
+      <div class="hint red">MINDI가 추천하는 케어 포인트</div>
+      <ul class="clean muted">
+        {{#RESULT_BAD_LIST}}
+        {{.}}
+        {{/RESULT_BAD_LIST}}
+      </ul>
+    </div>
+    {{/BAD_LIST}}
+
+    <div class="divider"></div>
+
+    <!-- 케어 결과 분석 -->
+    <h2 class="section">케어 결과 분석</h2>
+
+    <!-- chart -->
+    <div class="chart-card">
+      <div class="chart-title">일자별 점수 추이</div>
+      <div class="chart-wrap">
+        <!-- 이메일 호환 차트 - 테이블 기반 -->
+        <table class="chart-table">
+          <tr>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 40px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 60px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 30px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 80px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 100px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 70px;"></div>
+            </td>
+            <td style="height: 120px; vertical-align: bottom;">
+              <div class="chart-bar" style="width: 20px; height: 90px;"></div>
+            </td>
+          </tr>
+          <tr>
+            {{CHART_LABELS}}
+          </tr>
+        </table>
+        <div class="chart-legend">* 자체적 지표는 뒷면을 확인해주세요</div>
+      </div>
+    </div>
+
+    <!-- metric list -->
+    <div class="metric">
+      <div class="metric-name">회상력</div>
+      <div class="metric-sub">과거 대화의 맥락과 기억력이 개선되었나요?</div>
+      <div class="metric-score">
+        <span class="pill">0.3점</span>
+        <span class="dir down">▼</span>
+      </div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-name">유창성</div>
+      <div class="metric-sub">단어 사용이 다양해지나요?</div>
+      <div class="metric-score">
+        <span class="pill">0.2점</span>
+        <span class="dir down">▼</span>
+      </div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-name">일관성</div>
+      <div class="metric-sub">질문 의도를 잘 이해했나요?</div>
+      <div class="metric-score">
+        <span class="pill">0.1점</span>
+        <span class="dir up">▲</span>
+      </div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-name">정서 표현</div>
+      <div class="metric-sub">정서 표현이 풍부한가요?</div>
+      <div class="metric-score">
+        <span class="pill">0.2점</span>
+        <span class="dir up">▲</span>
+      </div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-name">문장 구성력</div>
+      <div class="metric-sub">문장이 더 구조가 다양해졌나요?</div>
+      <div class="metric-score">
+        <span class="pill">0.1점</span>
+        <span class="dir down">▼</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 대화 분석 -->
+    <h2 class="section">MINDI와의 대화 분석</h2>
+
+    <div class="banner mb12">인지와 언어 기능 측면에서 전반적으로 안정적인 성적을 보였으나, 일부 항목에서 갑작스러운 변화가 있었습니다.</div>
+    <p class="muted">특히, 일관성과 정서에서의 하락은 주의가 필요한 것으로 확인됩니다.</p>
+
+    <div class="blue-outline">MINDI가 추천하는 케어 포인트</div>
+    <div class="card">
+      <ul class="clean muted">
+        <li>매일 꾸준한 인지 훈련 및 활동을 통해 일관성과 정서를 향상시키도록 도와주세요.</li>
+        <li>인지 기능 향상을 위해 음악이나 미술 등의 창의적 활동을 권장해주세요.</li>
+        <li>매일 일정한 시간을 투자하여 회상과 유창성을 향상시키는 노력을 지속하도록 도와주세요.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
