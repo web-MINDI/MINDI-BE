@@ -32,4 +32,53 @@ python-cors==1.7.0
 chardet==5.2.0
 
 # 스케줄링
-APScheduler==3.10.4 
+APScheduler==3.10.4
+
+# 데이터베이스 마이그레이션
+alembic==1.13.1
+
+# Pydantic (FastAPI 의존성)
+pydantic==2.5.0
+
+# Starlette (FastAPI 의존성)
+starlette==0.27.0
+
+# 비밀번호 해싱
+bcrypt==4.1.2
+
+# JWT 토큰 처리
+PyJWT==2.8.0
+
+# 타입 힌트 지원
+typing-extensions==4.8.0
+
+# 날짜/시간 처리
+python-dateutil==2.8.2
+
+# 시스템 유틸리티
+psutil==5.9.6
+
+# JSON 처리 (고성능)
+ujson==5.8.0
+
+# 이메일 템플릿 처리
+jinja2==3.1.2
+
+# 데이터 분석
+pandas==2.1.4
+numpy==1.25.2
+
+# 웹 스크래핑
+requests==2.31.0
+
+# 테스트 프레임워크
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# 코드 품질
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# 개발 도구
+pre-commit==3.5.0 
