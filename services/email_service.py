@@ -127,6 +127,12 @@ class EmailService:
             bool: 발송 성공 여부
         """
         subject = f"[MINDI] {user_name}님의 인지 기능 진단 결과 리포트"
+
+        print(f"evaluate_good_list: {evaluate_good_list}")
+        print(f"evaluate_bad_list: {evaluate_bad_list}")
+        print(f"result_good_list: {result_good_list}")
+        print(f"result_bad_list: {result_bad_list}")
+        print(f"scores: {scores}")
         
         # 이메일 템플릿 적용
         email_html = self._create_diagnosis_email_template(
